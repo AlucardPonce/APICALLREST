@@ -90,6 +90,42 @@ app.get('/api/protected', authenticateToken, (req, res) => {
     });
 });
 
+app.post("/api/register", async (req, res) => {
+    const { nombre, email, password, telefono } = req.body;
+
+    if (!nombre || !email || !password || !telefono) {
+        return res.status(400).json({ error: "Faltan campos requeridos" });
+    }
+
+    try {
+        const userRef = db.collection("users");
+        const existingUserQuery = await userRef.where("email", "==", email).get();
+
+        if (!existingUserQuery.empty) {
+            // Ya hay un usuario con ese email
+            return res.status(409).json({ error: "El correo ya está usado en otra cuenta" });
+        }
+
+        // Encripta la contraseña
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = {
+            nombre,
+            email,
+            telefono,
+            password: hashedPassword,
+            createdAt: new Date(),
+        };
+
+        const newDoc = await userRef.add(newUser);
+
+        res.status(201).json({ success: true, id: newDoc.id });
+    } catch (error) {
+        console.error("Error al registrar usuario:", error);
+        res.status(500).json({ error: "Error al registrar usuario" });
+    }
+});
+
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
