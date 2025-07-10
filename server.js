@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const twilio = require('twilio');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const db = require('./firebaseconfig'); // configuración con admin y Firestore
+const db = require('./firebaseConfig.js'); // configuración con admin y Firestore
 const nodemailer = require('nodemailer');
 
 require('dotenv').config();
