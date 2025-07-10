@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const db = require('./firebaseConfig.js'); // configuración con admin y Firestore
 const nodemailer = require('nodemailer');
-
+const crypto = require('crypto');
 require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
@@ -191,6 +191,101 @@ app.post("/api/verify-and-register", async (req, res) => {
     } catch (err) {
         console.error("💥 Error en /verify-and-register:", err);
         res.status(500).json({ error: "Error al verificar y registrar" });
+    }
+});
+
+
+
+// Genera código numérico de 6 dígitos
+function generateCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+app.post("/api/send-code-reset-password", async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ error: "Falta el correo electrónico" });
+    }
+
+    try {
+        // Verificar que el usuario exista
+        const userSnap = await db.collection("users").where("email", "==", email).get();
+        if (userSnap.empty) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+
+        // Generar código de 6 dígitos
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Guardar código y fecha en Firestore en colección "password_resets"
+        await db.collection("password_resets").doc(email).set({
+            code,
+            createdAt: new Date(),
+        });
+
+        // Enviar correo con el código
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: "Código para restablecer tu contraseña",
+            text: `Tu código para restablecer la contraseña es: ${code}`,
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error en /send-code-reset-password:", error);
+        res.status(500).json({ error: "No se pudo enviar el código" });
+    }
+});
+
+app.post("/api/reset-password", async (req, res) => {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+        return res.status(400).json({ success: false, error: "Faltan campos" });
+    }
+
+    try {
+        const docRef = db.collection("password_resets").doc(email);
+        const docSnap = await docRef.get();
+
+        if (!docSnap.exists) {
+            return res.status(400).json({ success: false, error: "Código no encontrado" });
+        }
+
+        const data = docSnap.data();
+
+        if (data.code !== code.toString()) {
+            return res.status(400).json({ success: false, error: "Código incorrecto" });
+        }
+
+        const createdAt = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+        const now = new Date();
+        const diffMinutes = (now - createdAt) / (1000 * 60);
+        if (diffMinutes > 10) {
+            return res.status(400).json({ success: false, error: "El código ha expirado" });
+        }
+
+        const userSnap = await db.collection("users").where("email", "==", email).get();
+        if (userSnap.empty) {
+            return res.status(404).json({ success: false, error: "Usuario no encontrado" });
+        }
+
+        const userDoc = userSnap.docs[0];
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await db.collection("users").doc(userDoc.id).update({
+            password: hashedPassword,
+        });
+
+        // Borrar código tras usarlo
+        await docRef.delete();
+
+        res.json({ success: true, message: "Contraseña actualizada correctamente" });
+    } catch (error) {
+        console.error("Error en /reset-password:", error);
+        res.status(500).json({ success: false, error: "Error interno del servidor" });
     }
 });
 
