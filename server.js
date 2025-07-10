@@ -100,7 +100,7 @@ app.get('/api/protected', authenticateToken, (req, res) => {
 });
 
 // Enviar código de verificación por correo y guardarlo en Firestore
-app.post("/send-code", async (req, res) => {
+app.post("/api/send-code", async (req, res) => {
     const { to, code } = req.body;
 
     if (!to || !code) {
@@ -128,7 +128,7 @@ app.post("/send-code", async (req, res) => {
     }
 });
 
-// Registrar usuario con verificación de código desde Firestore
+// Registrar usuario con verificación de código desde Firestore 
 app.post("/api/verify-and-register", async (req, res) => {
     const { nombre, email, password, telefono, code } = req.body;
 
