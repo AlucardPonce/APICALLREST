@@ -17,6 +17,6 @@ function authenticateToken(req, res, next) {
         req.user = user; // Guardamos datos del usuario decodificado en req.user
         next();
     });
-}//PONCE
+}
 
 module.exports = authenticateToken;
