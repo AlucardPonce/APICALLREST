@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: api-inundaciones
+    env: python
+    buildCommand: ""
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 10000
+    envVars:
+      - key: OPENWEATHER_API_KEY
+        value: 708a6d80da7b5297dddd9f8fd5ce894e
