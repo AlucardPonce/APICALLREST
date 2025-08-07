@@ -337,7 +337,7 @@ const zonas = [
 app.get('/predicciones', async (req, res) => {
     try {
         const predicciones = await Promise.all(zonas.map(async (zona) => {
-            const response = await axios.post('http://127.0.0.1:8000/predecir', {
+            const response = await axios.post('https://apicallrest-2.onrender.com/predecir', {
                 lat: zona.lat,
                 lng: zona.lng,
                 elevacion: zona.elevacion,
@@ -381,7 +381,7 @@ app.post('/predicciones/personalizadas', async (req, res) => {
 
         //console.log('🌍 Enviando datos a IA para predicción:', { lat, lng, elevacion });
 
-        const response = await axios.post('http://127.0.0.1:8000/predecir', {
+        const response = await axios.post('https://apicallrest-2.onrender.com/predecir', {
             lat,
             lng,
             elevacion,
